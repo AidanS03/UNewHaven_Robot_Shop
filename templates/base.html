@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{% block title %}My Store{% endblock %}</title>
+
+  <!-- Semantic UI CDN -->
+   <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.css">
+
+  <style>
+    :root{
+      --royal-blue: #2747d0; /* adjust if you'd like a different blue */
+      --title-yellow: #ffd700;
+      --header-height: 120px;
+      --footer-height: 60px;
+    }
+
+    /* Page reset to ensure header/footer sizing */
+    html,body{
+      height:100%;
+      margin:0;
+      padding:0;
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    /* Top and bottom bars */
+    .site-header, .site-footer{
+      background: var(--royal-blue);
+      color: var(--title-yellow);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:100%;
+      box-sizing:border-box;
+    }
+
+    .site-header{ height: var(--header-height); }
+    .site-footer{ height: var(--footer-height); }
+
+    /* Big yellow title with black outline */
+    .site-title{
+      margin:0;
+      padding:0 1rem;
+      color: var(--title-yellow);
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing: 2px;
+      font-size: clamp(32px, 6vw, 64px); /* responsive size */
+      line-height:1;
+      /* text-outline fallback using multiple text-shadows for broad browser support */
+      text-shadow:
+        -2px -2px 0 #000,
+         2px -2px 0 #000,
+        -2px  2px 0 #000,
+         2px  2px 0 #000;
+      /* optional stronger stroke on supporting browsers */
+      -webkit-text-stroke: 1.5px #000;
+      /* keep the title readable on small screens */
+      white-space:nowrap;
+    }
+
+    /* Content area sized to fill remaining viewport between header and footer */
+    main.site-content{
+      min-height: calc(100vh - var(--header-height) - var(--footer-height));
+      padding: 2rem 1rem;
+      box-sizing:border-box;
+      background: #ffffff;
+    }
+
+    /* Optional container to keep content width consistent with Semantic UI's container */
+    .ui.main.container{
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* Small helper so footer sticks to bottom if content is short */
+    .page-wrap{
+      display:flex;
+      flex-direction:column;
+      min-height:100vh;
+    }
+    .page-body{
+      flex:1 0 auto;
+    }
+    .page-footer{
+      flex-shrink:0;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+    <!-- Header -->
+    <header class="site-header">
+      <div class="ui container">
+        <!-- Replace the text below with whatever heading you want. -->
+        <h1 class="site-title">New Haven Robotics Store</h1>
+      </div>
+    </header>
+
+    <!-- Main content area: child templates should override the "content" block -->
+    <div class="page-body">
+      <main class="site-content">
+        <div class="ui main container">
+          {% block content %}
+          <!-- default content can go here (or leave empty) -->
+          <div class="ui placeholder segment">
+            <h2 class="ui header">Welcome</h2>
+            <p>Replace this with your page content by overriding the "content" block.</p>
+          </div>
+          {% endblock %}
+        </div>
+      </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer page-footer">
+      <div class="ui container">
+        <!-- intentionally empty per your request -->
+      </div>
+    </footer>
+  </div>
+
+  <!-- Semantic UI JS (optional) -->
+    <script
+    src="https://code.jquery.com/jquery-3.1.1.min.js"
+    integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+    crossorigin="anonymous"></script>
+    <script src="semantic/dist/semantic.min.js"></script>
+</body>
+</html>

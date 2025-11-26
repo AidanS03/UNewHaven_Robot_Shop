@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Login - New Haven Robotics Store{% endblock %}
+
+{% block content %}
+<div class="ui centered grid" style="min-height:300px;">
+  <div class="six wide column">
+    <div class="ui raised segment">
+      <h2 class="ui header">Login</h2>
+
+      {# show flashed messages with categories (category, message) #}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          {% set ui_class = 'positive' if category == 'success' else 'negative' if category == 'error' else '' %}
+          <div class="ui {{ ui_class }} message">
+            <i class="close icon"></i>
+            <div class="header">{{ message }}</div>
+          </div>
+        {% endfor %}
+      {% endif %}
+      {% endwith %}
+
+      <form class="ui form" method="post" action="{{ url_for('login') }}">
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="text" placeholder="your@email.com" required autofocus>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" placeholder="Password" required>
+        </div>
+
+        <div class="ui two column grid">
+          <div class="column">
+            <button type="submit" class="ui primary button">Log in</button>
+          </div>
+          <div class="column right aligned">
+            <a href="{{ url_for('signup') }}" class="ui button basic">Sign up</a>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div style="text-align:center; margin-top:0.5rem;">
+      <a href="{{ url_for('home') }}" class="ui tiny basic button">Home</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
