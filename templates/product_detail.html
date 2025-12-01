@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }} - New Haven Robotics Store{% endblock %}
+
+{% block content %}
+<div class="ui grid">
+  <div class="sixteen wide column">
+    <a href="{{ url_for('products') }}" class="ui small basic button">
+      <i class="left arrow icon"></i>
+      Back to products
+    </a>
+  </div>
+</div>
+
+<div class="ui stackable grid" style="margin-top: 1rem;">
+  <div class="ten wide column">
+    <h2 class="ui header">
+      {{ product.name }}
+      {% if product.sku %}
+        <div class="sub header">SKU: {{ product.sku }}</div>
+      {% endif %}
+    </h2>
+
+    <div class="ui segment">
+      <h4 class="ui header">Description</h4>
+      {% if product.description %}
+        <p>{{ product.description }}</p>
+      {% else %}
+        <p>No description available.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="six wide column">
+    <div class="ui raised segment">
+      <h3 class="ui header">Purchase</h3>
+
+      <div class="ui large header" style="margin-bottom: 0.5rem;">
+        ${{ '%.2f'|format(product.unit_price) }}
+      </div>
+
+      {% if product.stock is not none %}
+        <p>
+          <strong>Availability:</strong>
+          {% if product.stock > 0 %}
+            <span class="ui green label">In stock: {{ product.stock }}</span>
+          {% else %}
+            <span class="ui red label">Out of stock</span>
+          {% endif %}
+        </p>
+      {% endif %}
+
+      {# Add to cart form #}
+      <form class="ui form"
+            method="post"
+            action="{{ url_for('add_to_cart', product_id=product.id) }}">
+        {# include CSRF token here if you use Flask-WTF, e.g. {{ form.csrf_token }} #}
+        <div class="field">
+          <label for="quantity">Quantity</label>
+          <input id="quantity"
+                 name="quantity"
+                 type="number"
+                 min="1"
+                 value="1"
+                 required
+                 {% if product.stock is not none and product.stock > 0 %}
+                   max="{{ product.stock }}"
+                 {% endif %}>
+        </div>
+
+        <button type="submit"
+                class="ui primary button"
+                {% if product.stock is not none and product.stock <= 0 %}
+                  disabled
+                {% endif %}>
+          <i class="shopping cart icon"></i>
+          Add to cart
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

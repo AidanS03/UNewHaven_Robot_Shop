@@ -22,7 +22,6 @@ CREATE TABLE products (
   id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   description TEXT,
-  sku VARCHAR(100) UNIQUE,
   unit_price DECIMAL(10,2) NOT NULL,
   stock INT NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -55,4 +54,10 @@ CREATE TABLE order_items (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO users (name, email, password)
-VALUES ('test', 'test@test.com', '123456789');
+VALUES ('test', 'test@test.com', '123456789'),
+		('Aidan Stoner', 'aston2@unh.newhaven.edu', 'scrypt:32768:8:1$00kOUujafq9t9xSY$e337ca57cf576233c807a740b760867f3f5e7adbeafcd876815f854008369790af01f66437d76e4f9636491ce3c342ca2222f8d7b2a1b55bc8afe59df9bd12a8'),
+        ('admin', 'admin@admin.op', 'scrypt:32768:8:1$sfAv57luYIZ9cciL$a4d91ad05c1f5989f00bf5dcfd66db38f6069be779fc49e66f7001125b7d8dbfb63a213e9a0e0ab9977268b784f8085b19c8476a6ae837e4c3615bebdbb11703');
+
+INSERT INTO products (id, name, description, unit_price, stock)
+VALUES (03, 'Tenacity', 'New Haven Robotics entry for the 2025 University Mars Rover Challenge, awarded them 13th in the world',
+		9999.95, 1);

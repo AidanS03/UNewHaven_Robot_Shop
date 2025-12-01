@@ -1,5 +1,72 @@
-<body>
-    <h1>Products Page</h1>
-    <p>Welcome to the products page!</p>
-    <p>Under Construction</p>
-</body>
+{% extends "base.html" %}
+{% block title %}Products - New Haven Robotics Store{% endblock %}
+
+{% block content %}
+<div class="ui grid">
+  <div class="sixteen wide column">
+    <h2 class="ui header">Products</h2>
+  </div>
+</div>
+
+{# Flash messages (e.g., "Added to cart") #}
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+  <div class="ui info message">
+    <ul class="list">
+      {% for msg in messages %}
+        <li>{{ msg }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+{% endwith %}
+
+{% if products %}
+  <div class="ui divided items">
+    {% for product in products %}
+      <div class="item">
+        <div class="content">
+          <a class="header" href="{{ url_for('product_detail', product_id=product.id) }}">
+            {{ product.name }}
+          </a>
+          <div class="meta">
+            {% if product.sku %}
+              <span>SKU: {{ product.sku }}</span>
+            {% endif %}
+          </div>
+          <div class="description">
+            {% if product.description %}
+              <p>{{ product.description[:120] }}{% if product.description|length > 120 %}…{% endif %}</p>
+            {% else %}
+              <p>No description available.</p>
+            {% endif %}
+          </div>
+          <div class="extra">
+            <span class="ui label">
+              ${{ '%.2f'|format(product.unit_price) }}
+            </span>
+            {% if product.stock is not none %}
+              <span class="ui small {{ 'green' if product.stock > 0 else 'red' }} label">
+                {% if product.stock > 0 %}In stock: {{ product.stock }}{% else %}Out of stock{% endif %}
+              </span>
+            {% endif %}
+
+            <a class="ui right floated primary button"
+               href="{{ url_for('product_detail', product_id=product.id) }}">
+              View details
+              <i class="right arrow icon"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="ui placeholder segment">
+    <div class="ui icon header">
+      <i class="box icon"></i>
+      No products available yet.
+    </div>
+  </div>
+{% endif %}
+{% endblock %}
