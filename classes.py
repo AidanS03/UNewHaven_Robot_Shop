@@ -24,7 +24,7 @@ class Product:
         self.name = name
         self.unit_price = unit_price
         self.stock = stock
-        self.description = ""
+        self.description = desc
         self.image_path = f"{self.name}.jpg"
 
     def is_in_stock(self):

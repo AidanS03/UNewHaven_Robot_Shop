@@ -154,13 +154,14 @@ def admin_delete_product(product_id):
     flash(f'Product {product_id}, deleted successfully.', 'success')
     return redirect(url_for('admin_products'))
 
-@app.route('/admin/products/edit', methods=['GET', 'POST'])
-def admin_edit_product():
+@app.route('/admin/products/<int:product_id>', methods=['GET', 'POST'])
+def admin_edit_product(product_id):
     global user
     if not user or not user.is_admin:
         flash('Access denied. Admins only.', 'error')
         return redirect(url_for('login'))
-    return render_template('base.html')
+    prod = get_product_by_id(product_id, conn)
+    return render_template('admin_edit_product.html', product=prod)
 
 if __name__ == '__main__':
     app.run(debug=True)

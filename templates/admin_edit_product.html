@@ -65,17 +65,6 @@
     </div>
 
     <div class="field">
-      <label for="image_filename">Image filename (optional)</label>
-      <input id="image_filename" name="image_filename" type="text"
-             value="{{ product.image_filename or '' }}"
-             placeholder="e.g. 5.jpg (stored under static/images/)">
-      <div class="ui tiny message">
-        If you always use &lt;product_id&gt;.jpg under <code>static/images/</code>,
-        you can ignore this and compute it in your Python code.
-      </div>
-    </div>
-
-    <div class="field">
       <div class="ui toggle checkbox">
         <input type="checkbox" id="is_active" name="is_active"
                {% if product.is_active %}checked{% endif %}>
