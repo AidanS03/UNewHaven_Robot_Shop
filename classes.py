@@ -19,12 +19,13 @@ class User:
         }
         
 class Product:
-    def __init__(self, product_id, name, unit_price, stock, desc):
+    def __init__(self, product_id, name, unit_price, stock, desc, is_active=False):
         self.id = product_id
         self.name = name
         self.unit_price = unit_price
         self.stock = stock
         self.description = desc
+        self.is_active = is_active
         self.image_path = f"{self.name}.jpg"
 
     def is_in_stock(self):
@@ -36,7 +37,8 @@ class Product:
             'name': self.name,
             'unit_price': self.unit_price,
             'stock': self.stock,
-            'description': self.description
+            'description': self.description,
+            'is_active': self.is_active
         }
         
 class CartItem:

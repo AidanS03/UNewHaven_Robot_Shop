@@ -6,14 +6,15 @@ def get_user_from_db(email, conn):
     cur.execute(query, (email,))
     result = cur.fetchone()
     if result:
-        return (User(result['name'], result['email']), result['password'])
-    return None
+        user = User(result['name'], result['email'])
+        return (user, result.get('password'))
+    return (None, None)
 
 def get_all_products(conn):
     cur = conn.cursor()
     query = "SELECT * FROM products"
     cur.execute(query)
-    products = [Product(product['id'], product['name'], product['unit_price'], product['stock'], product['description']) for product in cur.fetchall()]
+    products = [Product(product['id'], product['name'], product['unit_price'], product['stock'], product['description'], product['is_active']) for product in cur.fetchall()]
     return products
 
 def get_product_by_id(product_id, conn):
@@ -22,7 +23,7 @@ def get_product_by_id(product_id, conn):
     cur.execute(query, (product_id,))
     product = cur.fetchone()
     if product:
-        return Product(product['id'], product['name'], product['unit_price'], product['stock'], product['description'])
+        return Product(product['id'], product['name'], product['unit_price'], product['stock'], product['description'], product['is_active'])
     return None
 
 def delete_product_by_id(product_id, conn):

@@ -17,7 +17,6 @@
             {% if product.sku %}
               <span>SKU: {{ product.sku }}</span>
             {% endif %}
-            {# show price meta for everyone; you can restrict if you want #}
             <span>Price: ${{ '%.2f'|format(product.unit_price) }}</span>
           </div>
 
@@ -40,13 +39,11 @@
               </span>
             {% endif %}
 
-            {# Public / common "view" button #}
             <a class="ui button"
                href="{{ url_for('product_detail', product_id=product.id) }}">
               View
             </a>
 
-            {# Admin-only actions #}
             {% if show_admin_actions %}
               <a class="ui blue button"
                  href="{{ url_for('admin_edit_product', product_id=product.id) }}">
@@ -66,6 +63,21 @@
               </form>
             {% endif %}
           </div>
+        </div>
+
+        {# Right-side square image #}
+        <div class="image" style="flex: 0 0 96px; text-align: right;">
+          {% if product.image_path %}
+            <img src="{{ url_for('static', filename='images/' ~ product.image_path) }}"
+                 alt="{{ product.name }}"
+                 class="ui small image"
+                 style="object-fit: cover; width: 80px; height: 80px; border-radius: 4px;">
+          {% else %}
+            <div class="ui placeholder"
+                 style="width: 80px; height: 80px; display:inline-flex;align-items:center;justify-content:center;">
+              <i class="image outline icon"></i>
+            </div>
+          {% endif %}
         </div>
       </div>
     {% endfor %}
