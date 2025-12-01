@@ -1,9 +1,11 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 import pymysql
-from functions import get_user_from_db
+from functions import get_user_from_db, get_all_products, delete_product_by_id, get_product_by_id
 # from classes import User, Product
 
+# *****************************************************************************
+# Initializations
 app = Flask(__name__)
 # needed for flashing messages to the template
 app.secret_key = 'replace-this-with-a-secure-random-key'
@@ -18,10 +20,14 @@ conn = pymysql.connect(
 
 user = None
 
+# *****************************************************************************
+# Routes
 @app.route('/')
 def home():
-    return redirect(url_for('login'))
+    return redirect(url_for('logout'))
 
+# -----------------------------------------------------------------------------
+# Basic User Authentication Routes
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -32,6 +38,8 @@ def login():
         user, pw = get_user_from_db(email, conn)
         if user and check_password_hash(pw, password):
             flash('Login successful!', 'success')
+            if user.is_admin:
+                return redirect(url_for('admin_products'))
             return redirect(url_for('products'))
         else:
             flash('Invalid email or password.', 'error')
@@ -81,27 +89,78 @@ def signup():
 
     return render_template('signup.html')
 
+# -----------------------------------------------------------------------------
+# Product and Shopping Routes, main user pages
 @app.route('/products')
-def products():
+def products(): 
     
     cur = conn.cursor()
     query = "SELECT id, name, unit_price, stock, description FROM products"
     cur.execute(query)
     products = cur.fetchall()
-    print(products)
     return render_template('products.html', products=products)
 
 @app.route('/products/<int:product_id>')
 def product_detail(product_id):
-    cur = conn.cursor()
-    query = "SELECT * FROM products WHERE id = %s"
-    cur.execute(query, (product_id,))
-    product = cur.fetchone()
+    product = get_product_by_id(product_id, conn)
+    print(product)
     return render_template('product_detail.html', product=product)
 
 @app.route('/add_to_cart/<int:product_id>', methods=['POST'])
 def add_to_cart(product_id):
     return redirect(url_for('products'))
+
+# -----------------------------------------------------------------------------
+# Admin Routes
+@app.route('/admin/products')
+def admin_products():
+    global user
+    if not user or not user.is_admin:
+        flash('Access denied. Admins only.', 'error')
+        return redirect(url_for('login'))
+    prods = get_all_products(conn)
+    return render_template('admin_products.html', products=prods)
+
+@app.route('/admin/products/add', methods=['GET', 'POST'])
+def admin_add_product():
+    global user
+    if not user or not user.is_admin:
+        flash('Access denied. Admins only.', 'error')
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        # Get form data
+        name = request.form.get('name')
+        unit_price = request.form.get('unit_price')
+        stock = request.form.get('stock')
+        description = request.form.get('description')
+
+        # Insert new product into database
+        cur = conn.cursor()
+        insert_query = "INSERT INTO products (name, unit_price, stock, description) VALUES (%s, %s, %s, %s)"
+        cur.execute(insert_query, (name, unit_price, stock, description))
+        conn.commit()
+        flash(f'Product {name} added successfully.', 'success')
+        return redirect(url_for('admin_products'))
+    return render_template('admin_add_product.html')
+
+@app.route('/admin/products/delete/<int:product_id>', methods=['POST'])
+def admin_delete_product(product_id):
+    global user
+    if not user or not user.is_admin:
+        flash('Access denied. Admins only.', 'error')
+        return redirect(url_for('login'))
+    delete_product_by_id(product_id, conn)
+    flash(f'Product {product_id}, deleted successfully.', 'success')
+    return redirect(url_for('admin_products'))
+
+@app.route('/admin/products/edit', methods=['GET', 'POST'])
+def admin_edit_product():
+    global user
+    if not user or not user.is_admin:
+        flash('Access denied. Admins only.', 'error')
+        return redirect(url_for('login'))
+    return render_template('base.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

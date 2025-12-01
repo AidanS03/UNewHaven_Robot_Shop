@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Admin - Products - New Haven Robotics Store{% endblock %}
+
+{% block content %}
+<div class="ui grid">
+  <div class="twelve wide column">
+    <h2 class="ui header">Admin: Products</h2>
+  </div>
+  <div class="four wide column right aligned">
+    <a href="{{ url_for('admin_add_product') }}" class="ui primary button">
+      <i class="plus icon"></i>
+      Add new product
+    </a>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+  <div class="ui info message">
+    <ul class="list">
+      {% for msg in messages %}
+        <li>{{ msg }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+{% endwith %}
+
+{# include shared list, but enable admin actions #}
+{% set show_admin_actions = True %}
+{% include "_product_list.html" with context %}
+{% endblock %}

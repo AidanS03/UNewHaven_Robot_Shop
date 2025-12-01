@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Admin - Add Product - New Haven Robotics Store{% endblock %}
+
+{% block content %}
+<div class="ui grid">
+  <div class="twelve wide column">
+    <h2 class="ui header">Admin: Add Product</h2>
+  </div>
+  <div class="four wide column right aligned">
+    <a href="{{ url_for('admin_products') }}" class="ui button basic">
+      <i class="left arrow icon"></i>
+      Back to products
+    </a>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+  <div class="ui info message">
+    <ul class="list">
+      {% for msg in messages %}
+        <li>{{ msg }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+{% endwith %}
+
+<div class="ui raised segment">
+  <form class="ui form" method="post" action="{{ url_for('admin_add_product') }}">
+    {# If using Flask-WTF/CSRF: {{ form.csrf_token }} #}
+
+    <div class="required field">
+      <label for="name">Name</label>
+      <input id="name" name="name" type="text" placeholder="Product name" required>
+    </div>
+
+    <div class="field">
+      <label for="sku">SKU (optional)</label>
+      <input id="sku" name="sku" type="text" placeholder="SKU code">
+    </div>
+
+    <div class="field">
+      <label for="description">Description</label>
+      <textarea id="description" name="description" rows="4" placeholder="Describe the product"></textarea>
+    </div>
+
+    <div class="two fields">
+      <div class="required field">
+        <label for="unit_price">Unit price ($)</label>
+        <input id="unit_price" name="unit_price" type="number" step="0.01" min="0" required>
+      </div>
+      <div class="field">
+        <label for="stock">Stock</label>
+        <input id="stock" name="stock" type="number" min="0" value="0">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="image_filename">Image filename (optional)</label>
+      <input id="image_filename" name="image_filename" type="text"
+             placeholder="e.g. 5.jpg (stored under static/images/)">
+      <div class="ui tiny message">
+        If you follow your pattern of using &lt;product_id&gt;.jpg in <code>static/images/</code>,
+        you can leave this blank and compute it in Python.
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="ui toggle checkbox">
+        <input type="checkbox" id="is_active" name="is_active" checked>
+        <label for="is_active">Active (visible in store)</label>
+      </div>
+    </div>
+
+    <button type="submit" class="ui primary button">
+      <i class="plus icon"></i>
+      Add product
+    </button>
+    <a href="{{ url_for('admin_products') }}" class="ui button">
+      Cancel
+    </a>
+  </form>
+</div>
+{% endblock %}

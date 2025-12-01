@@ -20,6 +20,23 @@
       {% endif %}
     </h2>
 
+    {# Product image #}
+    <div class="ui segment">
+    <h4 class="ui header">Product image</h4>
+    {% if product.image_path %}
+        <img src="{{ url_for('static', filename='images/' ~ product.image_path) }}"
+            alt="{{ product.name }}"
+            class="ui medium bordered image" />
+    {% else %}
+        <div class="ui placeholder segment">
+        <div class="ui icon header">
+            <i class="image outline icon"></i>
+            No image available.
+        </div>
+        </div>
+    {% endif %}
+    </div>
+
     <div class="ui segment">
       <h4 class="ui header">Description</h4>
       {% if product.description %}
@@ -49,11 +66,9 @@
         </p>
       {% endif %}
 
-      {# Add to cart form #}
       <form class="ui form"
             method="post"
             action="{{ url_for('add_to_cart', product_id=product.id) }}">
-        {# include CSRF token here if you use Flask-WTF, e.g. {{ form.csrf_token }} #}
         <div class="field">
           <label for="quantity">Quantity</label>
           <input id="quantity"

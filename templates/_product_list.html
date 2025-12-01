@@ -1,0 +1,87 @@
+{# Shared product list partial.
+   Expected context:
+   - products: iterable of product objects
+   - show_admin_actions: optional bool (default False)
+#}
+
+{% if products %}
+  <div class="ui divided items">
+    {% for product in products %}
+      <div class="item">
+        <div class="content">
+          <a class="header" href="{{ url_for('product_detail', product_id=product.id) }}">
+            {{ product.name }}
+          </a>
+
+          <div class="meta">
+            {% if product.sku %}
+              <span>SKU: {{ product.sku }}</span>
+            {% endif %}
+            {# show price meta for everyone; you can restrict if you want #}
+            <span>Price: ${{ '%.2f'|format(product.unit_price) }}</span>
+          </div>
+
+          <div class="description">
+            {% if product.description %}
+              <p>{{ product.description[:120] }}{% if product.description|length > 120 %}…{% endif %}</p>
+            {% else %}
+              <p>No description available.</p>
+            {% endif %}
+          </div>
+
+          <div class="extra">
+            <span class="ui label">
+              ${{ '%.2f'|format(product.unit_price) }}
+            </span>
+
+            {% if product.stock is not none %}
+              <span class="ui small {{ 'green' if product.stock > 0 else 'red' }} label">
+                {% if product.stock > 0 %}In stock: {{ product.stock }}{% else %}Out of stock{% endif %}
+              </span>
+            {% endif %}
+
+            {# Public / common "view" button #}
+            <a class="ui button"
+               href="{{ url_for('product_detail', product_id=product.id) }}">
+              View
+            </a>
+
+            {# Admin-only actions #}
+            {% if show_admin_actions %}
+              <a class="ui blue button"
+                 href="{{ url_for('admin_edit_product', product_id=product.id) }}">
+                <i class="edit icon"></i>
+                Edit
+              </a>
+
+              <form method="post"
+                    action="{{ url_for('admin_delete_product', product_id=product.id) }}"
+                    style="display:inline;"
+                    onsubmit="return confirm('Are you sure you want to delete this product?');">
+                {# CSRF token here if you use Flask-WTF, e.g. {{ csrf_token() }} #}
+                <button type="submit" class="ui red button">
+                  <i class="trash icon"></i>
+                  Delete
+                </button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="ui placeholder segment">
+    <div class="ui icon header">
+      <i class="box icon"></i>
+      No products available yet.
+    </div>
+
+    {% if show_admin_actions %}
+      <a href="{{ url_for('admin_add_product') }}" class="ui primary button">
+        <i class="plus icon"></i>
+        Add your first product
+      </a>
+    {% endif %}
+  </div>
+{% endif %}
