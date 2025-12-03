@@ -22,25 +22,26 @@
 
     {# Product image #}
     <div class="ui segment">
-    <h4 class="ui header">Product image</h4>
-    {% if product.image_path %}
+      <h4 class="ui header">Product image</h4>
+      {% if product.image_path %}
         <img src="{{ url_for('static', filename='images/' ~ product.image_path) }}"
-            alt="{{ product.name }}"
-            class="ui medium bordered image" />
-    {% else %}
+             alt="{{ product.name }}"
+             class="ui medium bordered image" />
+      {% else %}
         <div class="ui placeholder segment">
-        <div class="ui icon header">
+          <div class="ui icon header">
             <i class="image outline icon"></i>
             No image available.
+          </div>
         </div>
-        </div>
-    {% endif %}
+      {% endif %}
     </div>
 
     <div class="ui segment">
       <h4 class="ui header">Description</h4>
+
       {% if product.description %}
-        <p>{{ product.description }}</p>
+        <div style="white-space: pre-wrap; word-wrap: break-word;">{{- product.description -}}</div>
       {% else %}
         <p>No description available.</p>
       {% endif %}
@@ -66,9 +67,9 @@
         </p>
       {% endif %}
 
-  <form class="ui form"
-    method="post"
-    action="{{ url_for('product_detail', product_id=product.id) }}">
+      <form class="ui form"
+            method="post"
+            action="{{ url_for('product_detail', product_id=product.id) }}">
         <div class="field">
           <label for="quantity">Quantity</label>
           <input id="quantity"

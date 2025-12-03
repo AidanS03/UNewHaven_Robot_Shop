@@ -6,6 +6,7 @@ class User:
     def __init__(self, username, email):
         self.username = username
         self.email = email
+        self.id = 1
         if self.username == 'admin':
             self.is_admin = True
         else:

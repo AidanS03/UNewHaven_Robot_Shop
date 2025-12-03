@@ -1,51 +1,79 @@
-{# Shared product list partial.
+{# Shared product list partial (grid/card layout).
    Expected context:
    - products: iterable of product objects
    - show_admin_actions: optional bool (default False)
+   Notes:
+   - Keeps all original logic (links, admin buttons, delete form, image path handling)
+   - New layout: card grid with large image on top, then a header row with name left and price/stock on the right.
+   - Title/link styling adjusted so the product name appears as a big bold header (not blue hyperlink).
 #}
 
 {% if products %}
-  <div class="ui divided items">
+  <div class="ui stackable cards">
     {% for product in products %}
-      <div class="item">
+      <div class="card">
+        {# Image - use static/images/<product.image_path> if provided #}
+        {% if product.image_path %}
+          <div class="image" style="height:180px; overflow:hidden; display:flex; align-items:center; justify-content:center;">
+            <img src="{{ url_for('static', filename='images/' ~ product.image_path) }}"
+                 alt="{{ product.name }}"
+                 style="width:100%; height:100%; object-fit:cover;">
+          </div>
+        {% else %}
+          <div class="image" style="height:180px; display:flex; align-items:center; justify-content:center; background:#f9f9f9;">
+            <i class="image outline huge icon" style="color:#bbb;"></i>
+          </div>
+        {% endif %}
+
         <div class="content">
-          <a class="header" href="{{ url_for('product_detail', product_id=product.id) }}">
-            {{ product.name }}
-          </a>
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem;">
+            <div style="flex:1 1 auto; min-width:0;">
+              {# Big bold header style; link color is inherited so it won't be blue #}
+              <div class="header" style="font-size:1.55rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                <a href="{{ url_for('product_detail', product_id=product.id) }}"
+                   style="color:inherit; text-decoration:none; display:inline-block; width:100%;">
+                  {{ product.name }}
+                </a>
+              </div>
 
-          <div class="meta">
-            {% if product.sku %}
-              <span>SKU: {{ product.sku }}</span>
-            {% endif %}
-            <span>Price: ${{ '%.2f'|format(product.unit_price) }}</span>
+              {% if product.sku %}
+                <div style="color:rgba(0,0,0,0.6); font-size:.9rem; margin-top:.15rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                  SKU: {{ product.sku }}
+                </div>
+              {% endif %}
+            </div>
+
+            <div style="flex:0 0 auto; text-align:right; margin-left:0.75rem;">
+              <div style="font-size:1.05rem; font-weight:600;">
+                ${{ '%.2f'|format(product.unit_price) }}
+              </div>
+              {% if product.stock is not none %}
+                <div style="margin-top:.35rem;">
+                  <span class="ui tiny {{ 'green' if product.stock > 0 else 'red' }} label">
+                    {% if product.stock > 0 %}In stock: {{ product.stock }}{% else %}Out of stock{% endif %}
+                  </span>
+                </div>
+              {% endif %}
+            </div>
           </div>
 
-          <div class="description">
-            {% if product.description %}
-              <p>{{ product.description[:120] }}{% if product.description|length > 120 %}…{% endif %}</p>
-            {% else %}
-              <p>No description available.</p>
-            {% endif %}
-          </div>
+          {% if product.description %}
+            <div class="description" style="margin-top:.6rem; color:rgba(0,0,0,0.7);">
+              <p style="margin:0;">{{ product.description[:120] }}{% if product.description|length > 120 %}…{% endif %}</p>
+            </div>
+          {% endif %}
+        </div>
 
-          <div class="extra">
-            <span class="ui label">
-              ${{ '%.2f'|format(product.unit_price) }}
-            </span>
-
-            {% if product.stock is not none %}
-              <span class="ui small {{ 'green' if product.stock > 0 else 'red' }} label">
-                {% if product.stock > 0 %}In stock: {{ product.stock }}{% else %}Out of stock{% endif %}
-              </span>
-            {% endif %}
-
-            <a class="ui button"
-               href="{{ url_for('product_detail', product_id=product.id) }}">
+        <div class="extra content" style="display:flex; gap:.5rem; align-items:center; justify-content:space-between;">
+          <div>
+            <a class="ui mini button" href="{{ url_for('product_detail', product_id=product.id) }}">
               View
             </a>
+          </div>
 
+          <div>
             {% if show_admin_actions %}
-              <a class="ui blue button"
+              <a class="ui mini blue button"
                  href="{{ url_for('admin_edit_product', product_id=product.id) }}">
                 <i class="edit icon"></i>
                 Edit
@@ -56,28 +84,13 @@
                     style="display:inline;"
                     onsubmit="return confirm('Are you sure you want to delete this product?');">
                 {# CSRF token here if you use Flask-WTF, e.g. {{ csrf_token() }} #}
-                <button type="submit" class="ui red button">
+                <button type="submit" class="ui mini red button">
                   <i class="trash icon"></i>
                   Delete
                 </button>
               </form>
             {% endif %}
           </div>
-        </div>
-
-        {# Right-side square image #}
-        <div class="image" style="flex: 0 0 96px; text-align: right;">
-          {% if product.image_path %}
-            <img src="{{ url_for('static', filename='images/' ~ product.image_path) }}"
-                 alt="{{ product.name }}"
-                 class="ui small image"
-                 style="object-fit: cover; width: 80px; height: 80px; border-radius: 4px;">
-          {% else %}
-            <div class="ui placeholder"
-                 style="width: 80px; height: 80px; display:inline-flex;align-items:center;justify-content:center;">
-              <i class="image outline icon"></i>
-            </div>
-          {% endif %}
         </div>
       </div>
     {% endfor %}
@@ -90,9 +103,13 @@
     </div>
 
     {% if show_admin_actions %}
-      <a href="{{ url_for('admin_add_product') }}" class="ui primary button">
+      <a href="{{ url_for('admin_add_product') }}" class="ui primary button" style="margin-top:1rem;">
         <i class="plus icon"></i>
         Add your first product
+      </a>
+    {% else %}
+      <a href="{{ url_for('products') }}" class="ui primary button" style="margin-top:1rem;">
+        Browse products
       </a>
     {% endif %}
   </div>

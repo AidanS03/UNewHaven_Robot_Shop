@@ -11,9 +11,9 @@
 
   <style>
     :root{
-      --royal-blue: #2747d0; /* adjust if you'd like a different blue */
+      --royal-blue: #2747d0;
       --title-yellow: #ffd700;
-      --header-height: 120px;
+      --header-height: 140px;
       --footer-height: 60px;
     }
 
@@ -43,7 +43,22 @@
       justify-content:center;
     }
 
+    /* Header layout: title on top row, tabbed menu row below it */
     .header-inner{
+      display:flex;
+      flex-direction:column;
+      gap:0.5rem;
+      width:100%;
+    }
+
+    .header-top{
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+    }
+
+    .header-nav-row{
+      width:100%;
       display:flex;
       align-items:center;
       justify-content:space-between;
@@ -56,15 +71,59 @@
       font-weight:900;
       text-transform:uppercase;
       letter-spacing: 2px;
-      font-size: clamp(32px, 6vw, 64px);
+      font-size: clamp(28px, 4.5vw, 48px);
       line-height:1;
       text-shadow:
         -2px -2px 0 #000,
          2px -2px 0 #000,
         -2px  2px 0 #000,
          2px  2px 0 #000;
-      -webkit-text-stroke: 1.5px #000;
+      -webkit-text-stroke: 1.2px #000;
       white-space:nowrap;
+      display:inline-block;
+    }
+
+    /* Style the tabular menu so it sits cleanly in the blue header */
+    .header-menu.ui.menu {
+      background: transparent;
+      box-shadow: none;
+      border: none;
+      margin: 0;
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    /* Menu items: use title-yellow text and remove default hover bg */
+    .header-menu.ui.menu .item {
+      color: var(--title-yellow) !important;
+      background: transparent !important;
+      border: none !important;
+      font-weight: 600;
+    }
+
+    /* Active tab: make it visually distinct (yellow background with dark text) */
+    .header-menu.ui.menu .item.active {
+      background: var(--title-yellow) !important;
+      color: #000 !important;
+      border-radius: 4px 4px 0 0;
+      box-shadow: none;
+    }
+
+    /* Right side: keep buttons same size */
+    .header-menu .right.menu .item .ui.button {
+      min-width: 84px;
+    }
+    .header-menu .right.menu .item .ui.button.small,
+    .header-menu .right.menu .item .ui.button.tiny {
+      font-size: 0.9rem;
+      padding: 0.45rem 0.75rem;
+    }
+
+    /* Slight spacing adjustments */
+    .header-left, .header-right {
+      display:flex;
+      align-items:center;
+      gap:0.5rem;
     }
 
     main.site-content{
@@ -91,10 +150,13 @@
       flex-shrink:0;
     }
 
-    /* Make login button small and keep header clean */
-    .header-actions .ui.button {
-      font-size: 0.9rem;
-      padding: 0.5rem 0.9rem;
+    @media (max-width: 720px) {
+      :root { --header-height: 160px; }
+      .site-title { font-size: 20px; white-space: normal; }
+      .header-inner { gap:.35rem; }
+      .header-nav-row { flex-direction: column; align-items:stretch; gap:.35rem; }
+      .header-menu .right.menu { justify-content:flex-end; }
+      .header-menu .item { padding: .5rem .6rem; }
     }
   </style>
 </head>
@@ -103,14 +165,49 @@
     <!-- Header -->
     <header class="site-header">
       <div class="ui container header-inner">
-        <h1 class="site-title">New Haven Robotics Store</h1>
-
-        <div class="header-actions">
-          <a href="{{ url_for('logout') }}" class="ui small grey button">
-            <i class="user icon"></i>
-            Login
-          </a>
+        <!-- Top: Title -->
+        <div class="header-top">
+          <h1 class="site-title">New Haven Robotics Store</h1>
         </div>
+
+        <!-- Bottom: Tabular menu row beneath the title -->
+        <div class="header-nav-row">
+          <div class="header-left" style="flex:1 1 auto;">
+            <div class="ui top attached tabular menu header-menu" role="navigation" aria-label="Primary">
+              <a class="item" href="{{ url_for('products') }}">Products</a>
+              {% if current_user and current_user.id %}
+                <a class="item" href="{{ url_for('orders', user_id=current_user.id) }}">Orders</a>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="header-right" style="flex:0 0 auto;">
+            <div class="ui top attached tabular menu header-menu" aria-label="Actions">
+              <div class="right menu" style="align-items:center; display:flex;">
+                <div class="item">
+                  <a href="{{ url_for('view_cart') }}" class="ui button small" role="button">
+                    <i class="shopping cart icon"></i>
+                    Cart
+                  </a>
+                </div>
+
+                <div class="item">
+                  <a href="{{ url_for('login') }}" class="ui primary button small" role="button">
+                    <i class="user icon"></i>
+                    Login
+                  </a>
+                </div>
+
+                <div class="item">
+                  <a href="{{ url_for('logout') }}" class="ui button small" role="button" title="Logout">
+                    <i class="sign-out icon"></i>
+                    Logout
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div> <!-- /.header-nav-row -->
       </div>
     </header>
 

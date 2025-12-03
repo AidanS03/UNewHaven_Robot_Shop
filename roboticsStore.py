@@ -20,11 +20,7 @@ conn = pymysql.connect(
 
 cart = ShoppingCart()
 
-# Note: we will store minimal user info in Flask's session instead of a global
-# variable. session['user'] will be a dict like {'username': ..., 'email': ..., 'is_admin': ...}
-
 def get_current_user():
-    """Return a User-like object from session or None."""
     user_info = session.get('user')
     if not user_info:
         return None
@@ -35,6 +31,14 @@ def get_current_user():
     if 'is_admin' in user_info:
         u.is_admin = user_info['is_admin']
     return u
+
+# Make get_current_user available in all templates
+@app.context_processor
+def inject_user():
+    return {
+        'get_current_user': get_current_user,
+        'current_user': get_current_user()
+    }
 
 # *****************************************************************************
 # Routes
@@ -114,16 +118,14 @@ def products():
     user = get_current_user()
     if user and getattr(user, 'is_admin', False):
         return redirect(url_for('admin_products'))
-
-    cur = conn.cursor()
-    query = "SELECT id, name, unit_price, stock, description FROM products"
-    cur.execute(query)
-    products = cur.fetchall()
+    products = get_all_products(conn)
+    products = [p for p in products if getattr(p, 'is_active', True)]
     return render_template('products.html', products=products)
 
 @app.route('/products/<int:product_id>', methods=['GET', 'POST'])
 def product_detail(product_id):
     product = get_product_by_id(product_id, conn)
+    print(product.description)
     if request.method == 'POST':
         # Add selected product to cart then redirect to cart view
         quantity = request.form.get('quantity', default=1, type=int)
@@ -132,6 +134,8 @@ def product_detail(product_id):
         return redirect(url_for('view_cart'))
     return render_template('product_detail.html', product=product)
 
+# -----------------------------------------------------------------------------
+# Shopping Cart Routes
 @app.route('/cart')
 def view_cart():
     # Simple cart view; adding happens in product_detail POST
@@ -150,6 +154,11 @@ def remove_from_cart(product_id):
 
 @app.route('/checkout', methods=['GET', 'POST'])
 def checkout():
+    return render_template('base.html')
+
+@app.route('/orders/<int:user_id>')
+def orders(user_id):
+    print(user_id)
     return render_template('base.html')
 
 # -----------------------------------------------------------------------------
