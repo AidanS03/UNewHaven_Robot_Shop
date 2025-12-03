@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Cart - New Haven Robotics Store{% endblock %}
+
+{% block content %}
+<div class="ui stackable grid">
+  <!-- Left: cart items -->
+  <div class="ten wide column">
+    <h2 class="ui header">Your Cart</h2>
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <div class="ui info message">
+        <ul class="list">
+          {% for msg in messages %}
+            <li>{{ msg }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+    {% endwith %}
+
+  {% if cart and cart.items %}
+      <div class="ui divided items">
+    {% for item in cart.items %}
+          <div class="item">
+            <div class="content">
+              <a class="header"
+         href="{{ url_for('product_detail', product_id=item.id) }}">
+        {{ item.name }}
+              </a>
+
+              <div class="meta">
+        <span>Price: ${{ '%.2f'|format(item.unit_price) }}</span>
+              </div>
+
+              <div class="description">
+                <p>Quantity: {{ '%.0f'|format(cart.get_item_quantity(item.id)) }}</p>
+        <p>Subtotal: ${{ '%.2f'|format(cart.get_item_total(item.id)) }}</p>
+              </div>
+
+              <div class="extra">
+                <form class="ui form"
+                      method="post"
+            action="{{ url_for('update_cart_item', product_id=item.id) }}"
+                      style="display:inline-block;">
+                  <div class="inline fields">
+                    <div class="field">
+            <label for="qty-{{ item.id }}">Qty</label>
+            <input id="qty-{{ item.id }}"
+                             name="quantity"
+                             type="number"
+                             min="1"
+                             value="{{ '%.0f'|format(cart.get_item_quantity(item.id)) }}"
+                             style="width:4.5rem;">
+                    </div>
+                    <div class="field">
+                      <button type="submit" class="ui tiny button">
+                        Update
+                      </button>
+                    </div>
+                  </div>
+                </form>
+
+                <form method="post"
+            action="{{ url_for('remove_from_cart', product_id=item.id) }}"
+                      style="display:inline-block; margin-left:0.5rem;"
+                      onsubmit="return confirm('Remove this item from your cart?');">
+                  <button type="submit" class="ui tiny red button">
+                    Remove
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="ui placeholder segment">
+        <div class="ui icon header">
+          <i class="shopping cart icon"></i>
+          Your cart is empty.
+        </div>
+        <a href="{{ url_for('products') }}" class="ui primary button">
+          Continue shopping
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Right: summary / totals -->
+  <div class="six wide column">
+    <h3 class="ui header">Order Summary</h3>
+
+    <div class="ui raised segment">
+      <div class="ui list">
+        <div class="item">
+          <div class="content">
+            <div class="header">Subtotal</div>
+            <div>${{ '%.2f'|format(cart.get_cart_subtotal() if cart else 0) }}</div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="content">
+            <div class="header">Tax</div>
+            <div>${{ '%.2f'|format(cart.get_cart_tax() if cart else 0) }}</div>
+          </div>
+        </div>
+        <div class="item">
+          <div class="content">
+            <div class="header">Total</div>
+            <div><strong>${{ '%.2f'|format(cart.get_cart_total() if cart else 0) }}</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ui divider"></div>
+
+      <div class="ui two column grid">
+        <div class="column">
+          <a href="{{ url_for('products') }}" class="ui button">
+            Continue shopping
+          </a>
+        </div>
+        <div class="column right aligned">
+          <form method="post" action="{{ url_for('checkout') }}">
+            <button type="submit"
+                    class="ui primary button"
+                    {% if not cart or not cart.items %}disabled{% endif %}>
+              Checkout
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

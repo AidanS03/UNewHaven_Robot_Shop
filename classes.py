@@ -40,21 +40,59 @@ class Product:
             'description': self.description,
             'is_active': self.is_active
         }
-        
-class CartItem:
-    def __init__(self, product, quantity):
-        self.product = product
-        self.quantity = quantity
 
-    def get_total_price(self):
-        return self.product.price * self.quantity
-    
 class ShoppingCart:
     def __init__(self):
         self.items = []
+        self.quantities = []
+        self.tax_rate = 0.0635  # 6.35% sales tax
 
     def add_item(self, product, quantity):
-        self.items.append(CartItem(product, quantity))
+        for item in self.items:
+            if item.id == product.id:
+                index = self.items.index(item)
+                self.quantities[index] += quantity
+                return
+        self.items.append(product)
+        self.quantities.append(quantity)
+
+    def get_cart_subtotal(self):
+        return float(sum(item.unit_price * qty for item, qty in zip(self.items, self.quantities)))
 
     def get_cart_total(self):
-        return sum(item.get_total_price() for item in self.items)
+        subtotal = self.get_cart_subtotal()
+        tax = subtotal * self.tax_rate
+        return subtotal + tax
+    
+    def get_cart_tax(self):
+        subtotal = self.get_cart_subtotal()
+        return subtotal * self.tax_rate
+    
+    def get_item_total(self, product_id):
+        for item in self.items:
+            if item.id == product_id:
+                index = self.items.index(item)
+                return item.unit_price * self.quantities[index]
+        return 0
+    
+    def get_item_quantity(self, product_id):
+        for item in self.items:
+            if item.id == product_id:
+                index = self.items.index(item)
+                return self.quantities[index]
+        return 0
+
+    def update_item(self, product_id, new_quantity):
+        for item in self.items:
+            if item.id == product_id:
+                index = self.items.index(item)
+                self.quantities[index] = new_quantity
+                break
+
+    def remove_item(self, product_id):
+        for item in self.items:
+            if item.id == product_id:
+                index = self.items.index(item)
+                self.items.pop(index)
+                self.quantities.pop(index)
+                break

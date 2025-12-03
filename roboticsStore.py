@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from werkzeug.security import generate_password_hash, check_password_hash
 import pymysql
 from functions import get_user_from_db, get_all_products, delete_product_by_id, get_product_by_id
-# from classes import User, Product
+from classes import ShoppingCart
 
 # *****************************************************************************
 # Initializations
@@ -17,6 +17,8 @@ conn = pymysql.connect(
     database='robotStore',
     cursorclass=pymysql.cursors.DictCursor
 )
+
+cart = ShoppingCart()
 
 # Note: we will store minimal user info in Flask's session instead of a global
 # variable. session['user'] will be a dict like {'username': ..., 'email': ..., 'is_admin': ...}
@@ -119,19 +121,36 @@ def products():
     products = cur.fetchall()
     return render_template('products.html', products=products)
 
-@app.route('/products/<int:product_id>')
+@app.route('/products/<int:product_id>', methods=['GET', 'POST'])
 def product_detail(product_id):
     product = get_product_by_id(product_id, conn)
-    print(product)
+    if request.method == 'POST':
+        # Add selected product to cart then redirect to cart view
+        quantity = request.form.get('quantity', default=1, type=int)
+        print(product, quantity)
+        cart.add_item(product, quantity)
+        return redirect(url_for('view_cart'))
     return render_template('product_detail.html', product=product)
-
-@app.route('/add_to_cart/<int:product_id>', methods=['POST'])
-def add_to_cart(product_id):
-    return redirect(url_for('products'))
 
 @app.route('/cart')
 def view_cart():
-    return render_template('cart.html')
+    # Simple cart view; adding happens in product_detail POST
+    return render_template('cart.html', cart=cart)
+
+@app.route('/cart/update_item/<int:product_id>', methods=['POST'])
+def update_cart_item(product_id):
+    quantity = request.form.get('quantity', default=1, type=int)
+    cart.update_item(product_id, quantity)
+    return redirect(url_for('view_cart'))
+
+@app.route('/cart/remove_item/<int:product_id>', methods=['POST'])
+def remove_from_cart(product_id):
+    cart.remove_item(product_id)
+    return redirect(url_for('view_cart'))
+
+@app.route('/checkout', methods=['GET', 'POST'])
+def checkout():
+    return render_template('base.html')
 
 # -----------------------------------------------------------------------------
 # Admin Routes

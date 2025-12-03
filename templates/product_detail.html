@@ -66,9 +66,9 @@
         </p>
       {% endif %}
 
-      <form class="ui form"
-            method="post"
-            action="{{ url_for('add_to_cart', product_id=product.id) }}">
+  <form class="ui form"
+    method="post"
+    action="{{ url_for('product_detail', product_id=product.id) }}">
         <div class="field">
           <label for="quantity">Quantity</label>
           <input id="quantity"
