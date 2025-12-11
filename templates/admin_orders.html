@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Admin - Orders{% endblock %}
+{% block content %}
+<h2 class="ui header">Orders</h2>
+<form class="ui form" method="get" action="{{ url_for('admin_orders') }}">
+  <div class="fields">
+    <div class="eight wide field">
+      <input type="text" name="q" placeholder="Search by user name, email, or user id" value="{{ q }}" />
+    </div>
+    <div class="four wide field">
+      <button class="ui button" type="submit">Search</button>
+      <a class="ui button" href="{{ url_for('admin_orders') }}">Clear</a>
+    </div>
+  </div>
+</form>
+
+<table class="ui celled table">
+  <thead>
+    <tr>
+      <th>Order #</th>
+      <th>User</th>
+      <th>Status</th>
+      <th>Total</th>
+      <th>Created</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for o in orders %}
+    <tr>
+      <td>{{ o.id }}</td>
+      <td>{{ o.name }} ({{ o.email }})</td>
+      <td>{{ o.status }}</td>
+      <td>${{ '%.2f'|format(o.total) }}</td>
+      <td>{{ o.created_at }}</td>
+      <td>
+        <a class="ui tiny button" href="{{ url_for('admin_order_detail', order_id=o.id) }}">View/Edit</a>
+        <form method="post" action="{{ url_for('admin_order_delete', order_id=o.id) }}" style="display:inline" onsubmit="return confirm('Delete this order?');">
+          <button class="ui tiny red button" type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

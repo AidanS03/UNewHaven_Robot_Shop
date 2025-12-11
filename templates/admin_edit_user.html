@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Admin - {{ 'Add User' if not user else 'Edit User' }}{% endblock %}
+{% block content %}
+<h2 class="ui header">{{ 'Add User' if not user else 'Edit User' }}</h2>
+<form class="ui form" method="post">
+  <div class="fields">
+    <div class="eight wide field">
+      <label>Name</label>
+      <input type="text" name="name" value="{{ user.name if user else '' }}" required />
+    </div>
+    <div class="eight wide field">
+      <label>Email</label>
+      <input type="email" name="email" value="{{ user.email if user else '' }}" required />
+    </div>
+  </div>
+  <div class="fields">
+    <div class="eight wide field">
+      <label>Password</label>
+      <input type="password" name="password" placeholder="{{ 'Leave blank to keep current password' if user else '' }}" />
+    </div>
+    <div class="eight wide field">
+      <label>Active</label>
+      <select name="is_active">
+        <option value="1" {% if not user or user.is_active %}selected{% endif %}>Active</option>
+        <option value="0" {% if user and not user.is_active %}selected{% endif %}>Inactive</option>
+      </select>
+    </div>
+  </div>
+  <button class="ui primary button" type="submit">Save</button>
+  <a class="ui button" href="{{ url_for('admin_users') }}">Cancel</a>
+</form>
+{% endblock %}

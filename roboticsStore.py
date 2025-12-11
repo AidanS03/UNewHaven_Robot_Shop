@@ -26,7 +26,13 @@ def get_current_user():
         return None
     # Lazy import to avoid circular issues
     from classes import User
-    u = User(user_info.get('username'), user_info.get('email'))
+    u = User(user_info.get('username'), user_info.get('email'), user_info.get('id'))
+    # propagate id to the User object so routes/templates use correct user
+    if 'id' in user_info and user_info['id'] is not None:
+        try:
+            u.id = int(user_info['id'])
+        except Exception:
+            pass
     # The classes.User sets is_admin based on username; ensure it matches stored flag if present
     if 'is_admin' in user_info:
         u.is_admin = user_info['is_admin']
@@ -58,6 +64,7 @@ def login():
         if user_obj and check_password_hash(pw, password):
             # store minimal user info in the session
             session['user'] = {
+                'id': getattr(user_obj, 'id', None),
                 'username': user_obj.username,
                 'email': user_obj.email,
                 'is_admin': getattr(user_obj, 'is_admin', False)
@@ -154,12 +161,94 @@ def remove_from_cart(product_id):
 
 @app.route('/checkout', methods=['GET', 'POST'])
 def checkout():
-    return render_template('base.html')
+    user = get_current_user()
+    if not user:
+        flash('Please log in to complete checkout.', 'error')
+        return redirect(url_for('login'))
+
+    # Ensure there are items in the cart
+    if not cart.items:
+        flash('Your cart is empty.', 'info')
+        return redirect(url_for('view_cart'))
+
+    try:
+        cur = conn.cursor()
+        # Insert order
+        total = cart.get_cart_total()
+        insert_order = "INSERT INTO orders (user_id, status, total) VALUES (%s, %s, %s)"
+        cur.execute(insert_order, (getattr(user, 'id', None) or 1, 'pending', total))
+        conn.commit()
+
+        # Get the new order id
+        order_id = cur.lastrowid
+
+        # Insert order items
+        insert_item = (
+            "INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) "
+            "VALUES (%s, %s, %s, %s, %s)"
+        )
+        for item, qty in zip(cart.items, cart.quantities):
+            subtotal = float(item.unit_price) * int(qty)
+            cur.execute(insert_item, (order_id, item.id, int(qty), float(item.unit_price), subtotal))
+        conn.commit()
+
+        # Decrease stock 
+        try:
+            for item, qty in zip(cart.items, cart.quantities):
+                cur.execute("UPDATE products SET stock = stock - %s WHERE id = %s", (int(qty), item.id))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+
+        # Clear the cart after successful checkout
+        cart.items.clear()
+        cart.quantities.clear()
+
+        flash('Order placed successfully!', 'success')
+        return redirect(url_for('products'))
+    except Exception as e:
+        conn.rollback()
+        flash(f'Checkout failed: {str(e)}', 'error')
+        return redirect(url_for('view_cart'))
 
 @app.route('/orders/<int:user_id>')
 def orders(user_id):
-    print(user_id)
-    return render_template('base.html')
+    user = get_current_user()
+    if not user:
+        flash('Please log in to view your orders.', 'error')
+        return redirect(url_for('login'))
+    effective_user_id = getattr(user, 'id', None) or user_id
+    if effective_user_id != user_id:
+        return redirect(url_for('orders', user_id=effective_user_id))
+
+    cur = conn.cursor()
+    # Fetch orders for user, newest first
+    cur.execute(
+        "SELECT id, status, total, created_at FROM orders WHERE user_id = %s ORDER BY created_at DESC",
+        (user_id,)
+    )
+    orders = cur.fetchall()
+
+    order_ids = [row['id'] for row in orders]
+    items_by_order = {}
+    if order_ids:
+        # Fetch items for these orders
+        format_strings = ','.join(['%s'] * len(order_ids))
+        cur.execute(
+            f"""
+            SELECT oi.order_id, oi.product_id, oi.quantity, oi.unit_price, oi.subtotal,
+                   p.name
+            FROM order_items oi
+            JOIN products p ON p.id = oi.product_id
+            WHERE oi.order_id IN ({format_strings})
+            ORDER BY oi.order_id ASC
+            """,
+            tuple(order_ids)
+        )
+        for row in cur.fetchall():
+            items_by_order.setdefault(row['order_id'], []).append(row)
+
+    return render_template('orders.html', orders=orders, items_by_order=items_by_order)
 
 # -----------------------------------------------------------------------------
 # Admin Routes
@@ -171,6 +260,207 @@ def admin_products():
         return redirect(url_for('login'))
     prods = get_all_products(conn)
     return render_template('admin_products.html', products=prods)
+
+# Users
+@app.route('/admin/users', methods=['GET'])
+def admin_users():
+    user = get_current_user()
+    if not user or not getattr(user, 'is_admin', False):
+        flash('Access denied. Admins only.', 'error')
+        return redirect(url_for('login'))
+
+    q = request.args.get('q', '').strip()
+    cur = conn.cursor()
+    if q:
+        cur.execute(
+            """
+            SELECT id, name, email, created_at, is_active
+            FROM users
+            WHERE name LIKE %s OR email LIKE %s OR CAST(id AS CHAR) = %s
+            ORDER BY created_at DESC
+            """,
+            (f"%{q}%", f"%{q}%", q)
+        )
+    else:
+        cur.execute("SELECT id, name, email, created_at, is_active FROM users ORDER BY created_at DESC")
+    users = cur.fetchall()
+    return render_template('admin_users.html', users=users, q=q)
+
+@app.route('/admin/users/add', methods=['GET', 'POST'])
+def admin_add_user():
+    user = get_current_user()
+    if not user or not getattr(user, 'is_admin', False):
+        flash('Access denied. Admins only.', 'error')
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        is_active = int(request.form.get('is_active', 1))
+        pw_hash = generate_password_hash(password)
+        cur = conn.cursor()
+        cur.execute("INSERT INTO users (name, email, password, is_active) VALUES (%s, %s, %s, %s)", (name, email, pw_hash, is_active))
+        conn.commit()
+        flash('User added.', 'success')
+        return redirect(url_for('admin_users'))
+    return render_template('admin_edit_user.html', user=None)
+
+@app.route('/admin/users/<int:user_id>', methods=['GET', 'POST'])
+def admin_edit_user(user_id):
+    user = get_current_user()
+    if not user or not getattr(user, 'is_admin', False):
+        flash('Access denied. Admins only.', 'error')
+        return redirect(url_for('login'))
+    cur = conn.cursor()
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        is_active = int(request.form.get('is_active', 1))
+        password = request.form.get('password')
+        if password:
+            pw_hash = generate_password_hash(password)
+            cur.execute("UPDATE users SET name=%s, email=%s, password=%s, is_active=%s WHERE id=%s", (name, email, pw_hash, is_active, user_id))
+        else:
+            cur.execute("UPDATE users SET name=%s, email=%s, is_active=%s WHERE id=%s", (name, email, is_active, user_id))
+        conn.commit()
+        flash('User updated.', 'success')
+        return redirect(url_for('admin_users'))
+    cur.execute("SELECT id, name, email, created_at, is_active FROM users WHERE id=%s", (user_id,))
+    u = cur.fetchone()
+    return render_template('admin_edit_user.html', user=u)
+
+@app.route('/admin/users/delete/<int:user_id>', methods=['POST'])
+def admin_delete_user(user_id):
+    user = get_current_user()
+    if not user or not getattr(user, 'is_admin', False):
+        flash('Access denied. Admins only.', 'error')
+        return redirect(url_for('login'))
+    cur = conn.cursor()
+    cur.execute("DELETE FROM users WHERE id=%s", (user_id,))
+    conn.commit()
+    flash('User deleted.', 'success')
+    return redirect(url_for('admin_users'))
+
+# Orders
+@app.route('/admin/orders', methods=['GET'])
+def admin_orders():
+    user = get_current_user()
+    if not user or not getattr(user, 'is_admin', False):
+        flash('Access denied. Admins only.', 'error')
+        return redirect(url_for('login'))
+    q = request.args.get('q', '').strip()
+    cur = conn.cursor()
+    if q:
+        cur.execute(
+            """
+            SELECT o.id, o.user_id, u.name, u.email, o.status, o.total, o.created_at
+            FROM orders o
+            JOIN users u ON u.id = o.user_id
+            WHERE u.name LIKE %s OR u.email LIKE %s OR CAST(o.user_id AS CHAR) = %s
+            ORDER BY o.created_at DESC
+            """,
+            (f"%{q}%", f"%{q}%", q)
+        )
+    else:
+        cur.execute(
+            "SELECT o.id, o.user_id, u.name, u.email, o.status, o.total, o.created_at FROM orders o JOIN users u ON u.id=o.user_id ORDER BY o.created_at DESC"
+        )
+    orders = cur.fetchall()
+    return render_template('admin_orders.html', orders=orders, q=q)
+
+@app.route('/admin/orders/<int:order_id>', methods=['GET', 'POST'])
+def admin_order_detail(order_id):
+    user = get_current_user()
+    if not user or not getattr(user, 'is_admin', False):
+        flash('Access denied. Admins only.', 'error')
+        return redirect(url_for('login'))
+    cur = conn.cursor()
+    if request.method == 'POST':
+        status = request.form.get('status')
+        total = request.form.get('total')
+        cur.execute("UPDATE orders SET status=%s, total=%s WHERE id=%s", (status, total, order_id))
+        conn.commit()
+        flash('Order updated.', 'success')
+        return redirect(url_for('admin_order_detail', order_id=order_id))
+    # fetch order
+    cur.execute("SELECT o.id, o.user_id, u.name, u.email, o.status, o.total, o.created_at FROM orders o JOIN users u ON u.id=o.user_id WHERE o.id=%s", (order_id,))
+    order = cur.fetchone()
+    # fetch items
+    cur.execute(
+        """
+        SELECT oi.id, oi.product_id, p.name, oi.quantity, oi.unit_price, oi.subtotal
+        FROM order_items oi
+        JOIN products p ON p.id=oi.product_id
+        WHERE oi.order_id=%s
+        ORDER BY oi.id ASC
+        """,
+        (order_id,)
+    )
+    items = cur.fetchall()
+    return render_template('admin_order_detail.html', order=order, items=items)
+
+@app.route('/admin/orders/<int:order_id>/items/add', methods=['POST'])
+def admin_order_item_add(order_id):
+    user = get_current_user()
+    if not user or not getattr(user, 'is_admin', False):
+        flash('Access denied. Admins only.', 'error')
+        return redirect(url_for('login'))
+    cur = conn.cursor()
+    product_id = int(request.form.get('product_id'))
+    quantity = int(request.form.get('quantity'))
+    # get price
+    cur.execute("SELECT unit_price FROM products WHERE id=%s", (product_id,))
+    row = cur.fetchone()
+    unit_price = float(row['unit_price']) if row else 0.0
+    subtotal = unit_price * quantity
+    cur.execute("INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) VALUES (%s, %s, %s, %s, %s)", (order_id, product_id, quantity, unit_price, subtotal))
+    conn.commit()
+    flash('Item added.', 'success')
+    return redirect(url_for('admin_order_detail', order_id=order_id))
+
+@app.route('/admin/orders/items/<int:item_id>/update', methods=['POST'])
+def admin_order_item_update(item_id):
+    user = get_current_user()
+    if not user or not getattr(user, 'is_admin', False):
+        flash('Access denied. Admins only.', 'error')
+        return redirect(url_for('login'))
+    cur = conn.cursor()
+    quantity = int(request.form.get('quantity'))
+    unit_price = float(request.form.get('unit_price'))
+    subtotal = unit_price * quantity
+    cur.execute("UPDATE order_items SET quantity=%s, unit_price=%s, subtotal=%s WHERE id=%s", (quantity, unit_price, subtotal, item_id))
+    conn.commit()
+    flash('Item updated.', 'success')
+    # need order_id to redirect; fetch
+    cur.execute("SELECT order_id FROM order_items WHERE id=%s", (item_id,))
+    row = cur.fetchone()
+    return redirect(url_for('admin_order_detail', order_id=row['order_id']))
+
+@app.route('/admin/orders/items/<int:item_id>/delete', methods=['POST'])
+def admin_order_item_delete(item_id):
+    user = get_current_user()
+    if not user or not getattr(user, 'is_admin', False):
+        flash('Access denied. Admins only.', 'error')
+        return redirect(url_for('login'))
+    cur = conn.cursor()
+    cur.execute("SELECT order_id FROM order_items WHERE id=%s", (item_id,))
+    row = cur.fetchone()
+    cur.execute("DELETE FROM order_items WHERE id=%s", (item_id,))
+    conn.commit()
+    flash('Item deleted.', 'success')
+    return redirect(url_for('admin_order_detail', order_id=row['order_id']))
+
+@app.route('/admin/orders/delete/<int:order_id>', methods=['POST'])
+def admin_order_delete(order_id):
+    user = get_current_user()
+    if not user or not getattr(user, 'is_admin', False):
+        flash('Access denied. Admins only.', 'error')
+        return redirect(url_for('login'))
+    cur = conn.cursor()
+    cur.execute("DELETE FROM orders WHERE id=%s", (order_id,))
+    conn.commit()
+    flash('Order deleted.', 'success')
+    return redirect(url_for('admin_orders'))
 
 @app.route('/admin/products/add', methods=['GET', 'POST'])
 def admin_add_product():

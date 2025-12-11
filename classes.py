@@ -3,10 +3,11 @@ from flask import url_for
 
 
 class User:
-    def __init__(self, username, email):
+    def __init__(self, username, email, user_id=None):
         self.username = username
         self.email = email
-        self.id = 1
+        # allow id to be passed in from DB/session; default remains 1 for backward compatibility
+        self.id = int(user_id) if user_id is not None else 1
         if self.username == 'admin':
             self.is_admin = True
         else:

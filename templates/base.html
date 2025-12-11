@@ -175,7 +175,10 @@
           <div class="header-left" style="flex:1 1 auto;">
             <div class="ui top attached tabular menu header-menu" role="navigation" aria-label="Primary">
               <a class="item" href="{{ url_for('products') }}">Products</a>
-              {% if current_user and current_user.id %}
+              {% if current_user and current_user.is_admin %}
+                <a class="item" href="{{ url_for('admin_orders') }}">Orders</a>
+                <a class="item" href="{{ url_for('admin_users') }}">Users</a>
+              {% elif current_user and current_user.id %}
                 <a class="item" href="{{ url_for('orders', user_id=current_user.id) }}">Orders</a>
               {% endif %}
             </div>

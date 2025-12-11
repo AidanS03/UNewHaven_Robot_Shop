@@ -6,7 +6,15 @@ def get_user_from_db(email, conn):
     cur.execute(query, (email,))
     result = cur.fetchone()
     if result:
-        user = User(result['name'], result['email'])
+        user = User(result['name'], result['email'], result.get('id'))
+        # propagate DB id and is_admin flag if present
+        if 'id' in result:
+            try:
+                user.id = int(result['id'])
+            except Exception:
+                pass
+        if 'is_admin' in result:
+            user.is_admin = bool(result['is_admin'])
         return (user, result.get('password'))
     return (None, None)
 

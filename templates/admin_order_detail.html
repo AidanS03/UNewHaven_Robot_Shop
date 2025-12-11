@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Admin - Order #{{ order.id }}{% endblock %}
+{% block content %}
+<h2 class="ui header">Order #{{ order.id }}</h2>
+<div class="ui segment">
+  <form class="ui form" method="post">
+    <div class="fields">
+      <div class="eight wide field">
+        <label>Status</label>
+        <input type="text" name="status" value="{{ order.status }}" />
+      </div>
+      <div class="eight wide field">
+        <label>Total</label>
+        <input type="number" step="0.01" name="total" value="{{ order.total }}" />
+      </div>
+    </div>
+    <div class="fields">
+      <div class="eight wide field">
+        <label>User</label>
+        <input type="text" value="{{ order.name }} ({{ order.email }})" disabled />
+      </div>
+      <div class="eight wide field">
+        <label>Placed</label>
+        <input type="text" value="{{ order.created_at }}" disabled />
+      </div>
+    </div>
+    <button class="ui primary button" type="submit">Save</button>
+    <a class="ui button" href="{{ url_for('admin_orders') }}">Back</a>
+  </form>
+</div>
+
+<h3 class="ui header">Items</h3>
+<table class="ui celled table">
+  <thead>
+    <tr>
+      <th>Product</th>
+      <th>Quantity</th>
+      <th>Unit Price</th>
+      <th>Subtotal</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for it in items %}
+    <tr>
+      <td>{{ it.name }}</td>
+      <td>
+        <form method="post" action="{{ url_for('admin_order_item_update', item_id=it.id) }}" class="ui form">
+          <div class="fields">
+            <div class="field" style="width: 90px;">
+              <input type="number" name="quantity" value="{{ it.quantity }}" min="1" />
+            </div>
+            <div class="field" style="width: 120px;">
+              <input type="number" step="0.01" name="unit_price" value="{{ it.unit_price }}" />
+            </div>
+            <div class="field">
+              <button class="ui tiny button" type="submit">Update</button>
+            </div>
+          </div>
+        </form>
+      </td>
+      <td>${{ '%.2f'|format(it.unit_price) }}</td>
+      <td>${{ '%.2f'|format(it.subtotal) }}</td>
+      <td>
+        <form method="post" action="{{ url_for('admin_order_item_delete', item_id=it.id) }}" style="display:inline" onsubmit="return confirm('Delete this item?');">
+          <button class="ui tiny red button" type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h4 class="ui header">Add Item</h4>
+<form class="ui form" method="post" action="{{ url_for('admin_order_item_add', order_id=order.id) }}">
+  <div class="fields">
+    <div class="six wide field">
+      <label>Product ID</label>
+      <input type="number" name="product_id" required />
+    </div>
+    <div class="six wide field">
+      <label>Quantity</label>
+      <input type="number" name="quantity" min="1" required />
+    </div>
+    <div class="four wide field">
+      <label>&nbsp;</label>
+      <button class="ui primary button" type="submit">Add</button>
+    </div>
+  </div>
+</form>
+{% endblock %}
