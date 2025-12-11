@@ -1,6 +1,3 @@
-import pymysql
-from flask import url_for
-
 
 class User:
     def __init__(self, username, email, user_id=None):
